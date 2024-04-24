@@ -1,0 +1,157 @@
+---
+title: "From Nourishment to Longevity"
+subtitle: "UNICEF's Insight into Cildhood Nutrition, GDP, and Life Expectancy"
+author: "Ciara O'Connor"
+date: "2024-04-20"
+format:
+  html:
+    theme: sandstone 
+execute: 
+  echo: false
+  warning: false
+  message: false 
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+#libraries
+library(tidyverse)
+library(plotly)
+library(gridExtra)
+
+#data
+unicef_metadata <- read_csv("unicef_metadata.csv")
+unicef_indicator_1 <- read_csv("unicef_indicator_1.csv")
+
+#transformations
+data_join <- full_join(unicef_metadata, unicef_indicator_1)
+data_join <- full_join(unicef_metadata, unicef_indicator_1, by = join_by(country, alpha_2_code, alpha_3_code))
+data_join <- full_join(unicef_metadata, unicef_indicator_1, by = c("country", "alpha_2_code", "alpha_3_code"))
+```
+
+```{r}
+map_world <- map_data("world")
+
+data_join %>%
+  filter(year == 1999) %>%
+  full_join(map_world, by = c("country" = "region")) %>%
+  ggplot(aes(x = long, y = lat, group = group, fill = GDP_per_capita)) +
+  geom_polygon() +
+  labs(
+    title = "GDP per Capita in 1999")
+```
+
+```{r}
+#| fig-cap: "In a world where the health and well-being of our youngest generation lay the foundation for a prosperous future, understanding the intricate interplay between economic prosperity, childhood nutrition, and life expectancy is paramount. Welcome to our journey through the UNICEF dataset, where we unravel the narrative of how early childhood nutrition impacts the longevity of nations, influenced by the economic landscape. Join us as we explore maps, time-series data, bar charts, and scatterplots to unveil the multifaceted dynamics shaping the health outcomes of generations to come. Our voyage begins with maps that illuminate the economic landscapes across the globe. These visual representations vividly portray the distribution of GDP, showcasing regions of affluence and areas grappling with economic challenges. Dark shades signify prosperous nations, while lighter shades hint at disparities in wealth. These maps serve as a backdrop, setting the stage for understanding how economic prosperity intersects with childhood nutrition and ultimately impacts life expectancy."
+
+data_join %>%
+  filter(year == 2021) %>%
+  full_join(map_world, by = c("country" = "region")) %>%
+  ggplot( aes(x = long, y = lat, group = group, fill = GDP_per_capita)) +
+  geom_polygon() +
+  labs(
+    title = "GDP per Capita in 2021")
+```
+
+```{r}
+#| fig-cap: "As we journey through time-series data, a story of resilience and progress unfolds. Graphs charting life expectancy over decades reveal the triumphs of public health initiatives, medical advancements, and societal improvements. We witness the steady rise of life expectancy in many regions, reflecting the collective efforts to enhance healthcare systems and promote well-being."
+
+timeseries_plot_1 <- data_join %>%
+  ggplot() +
+  aes(year, LifeExp_at_birth, group = country, colour = country) +
+  geom_line() +
+  labs(
+    title = "Life Expectancy over the Years")
+
+ggplotly(timeseries_plot_1)
+```
+
+```{r}
+#| fig-cap: "Turning our gaze to bar charts, we delve into the regional nuances of childhood nutrition. These visual representations offer insights into the disparities in nutritional access and outcomes across different parts of the world. Contrasts in bar heights highlight regions where nutrition interventions have made significant strides, as well as areas where urgent action is needed to address food insecurity and malnutrition among children."
+
+ggplot(data_join, aes(x = country, y = obs_value, label = country)) +
+  geom_bar(stat = "identity", fill = "red") +
+  labs(title = "Fruit/Vegetable Consumption Across the World",
+       y = "Fruit/Vegetable Consumption") +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+```
+
+```{r}
+peru_data <- data.frame(
+  Year = c("2007", "2019"),
+  Fruit_Veg_Consumption = c(12.1, 6.1),
+  GDP = c(4397.05, 6550.45),
+  Life_Expectancy = c(73.22, 76.16))
+plot5 <-ggplot(peru_data, aes(x = Year, y = Fruit_Veg_Consumption, fill = Year)) +
+  geom_bar(stat = "identity", position = "dodge", color = "black") +
+  labs(title = "Fruit/Veg Consumption in Peru",
+       x = "Year",
+       y = "Fruit/Vegetable Consumption (%)",
+       fill = "Year") +
+  geom_text(aes(label = paste0(Fruit_Veg_Consumption, "%"), y = Fruit_Veg_Consumption + 0.5), vjust = -0.5, color = "black") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+```{r}
+#| fig-cap: "This data contrasts zero fruit and vegetable consumption, GDP, and life expectancy in Peru and Bangladesh over time. In Peru, a decrease in zero fruit and vegetable consumption from 2007 to 2019 coincided with an increase in GDP and life expectancy, suggesting a potential inverse relationship between consumption and life expectancy, and a positive correlation between GDP growth and life expectancy. Conversely, Bangladesh experienced a decrease in consumption alongside GDP growth and an increase in life expectancy, indicating a complex interplay of factors affecting health outcomes. While lower zero fruit & veg consumption may correlate with improved life expectancy, other socioeconomic factors also likely contribute."
+
+bangladesh_data <- data.frame(
+  Year = c("2011", "2019"),
+  Fruit_Veg_Consumption = c(55.4, 44.8),
+  GDP = c(1017.63, 1557.96),
+  Life_Expectancy = c(68.81, 72.81))
+plot6 <- ggplot(bangladesh_data, aes(x = Year, y = Fruit_Veg_Consumption, fill = Year)) +
+  geom_bar(stat = "identity", position = "dodge", color = "black") +
+  labs(title = "Fruit/Vegetable Consumption in Bangladesh",
+       x = "Year",
+       y = "Fruit/Veg Consumption (%)",
+       fill = "Year") +
+  geom_text(aes(label = paste0(Fruit_Veg_Consumption, "%"), y = Fruit_Veg_Consumption + 2), vjust = -0.5, color = "black") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+grid.arrange(plot5, plot6, ncol = 2)
+```
+
+
+```{r}
+#| fig-cap: "In our quest for understanding, scatterplots emerge as powerful tools for illuminating correlations between GDP, life expectancy, and childhood nutrition. Each data point represents a nation's journey, revealing patterns of association between economic prosperity and health outcomes. We observe clusters where higher GDP aligns with increased life expectancy, underscoring the role of economic factors in shaping public health trajectories. Yet, outliers prompt deeper reflection on the nuanced interplay of social, environmental, and political determinants influencing health outcomes."
+
+ggplot(data_join) +
+  aes(GDP_per_capita, LifeExp_at_birth,) +
+  geom_point(fill = "blue") +
+  labs(title = "Average GDP per Capita & How it Affects a Countries Life Expectancy") +
+  theme_minimal()
+```
+
+```{r}
+data_join_1999 <- data_join %>%
+  filter(year == 1999)
+
+map_data_join_1999 <- full_join(data_join_1999, map_world, by = c("country" = "region"))
+
+ggplot(map_data_join_1999) +
+  aes(x = long, y = lat, group = group, fill = LifeExp_at_birth) +
+  geom_polygon() +
+  labs(
+    title = "Life Expectancy in 1999")
+```
+
+```{r}
+#| fig-cap: "As our expedition draws to a close, we reflect on the insights gleaned from our exploration of the UNICEF dataset. The intricate web of connections between GDP, childhood nutrition, and life expectancy underscores the importance of holistic approaches to public health and development. Our journey has revealed both progress and challenges, highlighting the need for concerted efforts to ensure that every child has access to nutritious food, quality healthcare, and opportunities for a fulfilling life. Together, let us embark on a collective endeavor to nurture healthier, more equitable societies, where every child can thrive and reach their full potential."
+
+data_join_2021 <- data_join %>%
+  filter(year == 2021)
+
+map_data_join_2021 <- full_join(data_join_2021, map_world, by = c("country" = "region"))
+
+ggplot(map_data_join_2021) +
+  aes(x = long, y = lat, group = group, fill = LifeExp_at_birth) +
+  geom_polygon()+
+  labs(
+    title = "Life Expectancy in 2021")
+```
